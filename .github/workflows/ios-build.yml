@@ -21,6 +21,11 @@ jobs:
       - name: project.yml から .xcodeproj を生成
         run: xcodegen generate
 
+      # 何が作られたかを必ず記録に残す。スキームが無いと次の手順が3秒で落ちるので、
+      # そのときこの出力を見れば一発で分かる。
+      - name: 中身を確認（ターゲットとスキームの一覧）
+        run: xcodebuild -list -project GaitCam.xcodeproj
+
       - name: 署名なしでビルド
         run: |
           xcodebuild \

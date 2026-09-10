@@ -7,6 +7,20 @@ options:
     iOS: "16.0"
   createIntermediateGroups: true
 
+# ★スキーム（どれをどう組み立てるかの指示書）。
+#   XcodeGen は「明示しない限りスキームを作らない」。
+#   無いまま xcodebuild -scheme GaitCam を叩くと、コンパイルに入る前に3秒で落ちる。
+#   2026-09-10の初回ビルド失敗はこれ。
+schemes:
+  GaitCam:
+    build:
+      targets:
+        GaitCam: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   GaitCam:
     type: application
