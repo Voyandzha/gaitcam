@@ -11,9 +11,21 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      # ★Macには複数のXcodeが入っていて、既定で選ばれるのが古い方のことがある。
+      #   XcodeGen(2.46)が書くプロジェクト形式(objectVersion 77)は Xcode 16 以降でないと読めず、
+      #   Xcode 15.4 だと「future Xcode project file format (77)」で止まる。2026-09-10に踏んだ。
+      #   入っているXcodeを全部出したうえで、一番新しいものを選ぶ。
+      - name: 新しい方の Xcode を選ぶ
+        run: |
+          echo "--- 入っている Xcode ---"
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          echo "--- 使う Xcode ---"
+          xcodebuild -version
 
       - name: XcodeGen を入れる
         run: brew install xcodegen
