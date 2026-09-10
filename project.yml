@@ -1,0 +1,37 @@
+# XcodeGen 用の定義。Xcode を持っていなくても、この1枚から .xcodeproj が生成される。
+# 手で .xcodeproj を編集しないこと（次の生成で消える）。
+name: GaitCam
+options:
+  bundleIdPrefix: local.gaitcam
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  GaitCam:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.gaitcam.GaitCam
+        PRODUCT_NAME: GaitCam
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: 1          # iPhone のみ
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+
+        # 許可ダイアログに出る説明文。無いと起動直後に落ちる。
+        INFOPLIST_KEY_NSCameraUsageDescription: "歩行動画を高フレームレートで撮影します"
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "LED同期の確認用に音声も記録します"
+
+        # 走路を横から撮るので横向き固定。
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeRight UIInterfaceOrientationLandscapeLeft"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+
+        # ★ これを入れておくと、撮った .mov と .txt が「ファイル」アプリに出てくる。
+        #   PC へ持ち出すのに必須（入れ忘れるとアプリの中から出せない）。
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES

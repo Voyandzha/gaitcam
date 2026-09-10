@@ -1,0 +1,47 @@
+# Windows PC しか無くても iOS アプリをビルドするための仕組み。
+# GitHub が貸してくれる Mac の上で XcodeGen + xcodebuild を回し、
+# 署名なしの .ipa を成果物として置いて帰る。手元に Mac は要らない。
+#
+# 署名は Windows 側で Sideloadly が Apple ID を使って行う（無料アカウントなら7日で失効）。
+name: build-ipa
+
+on:
+  push:
+  workflow_dispatch:      # GitHub の画面のボタンから手動でも回せる
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen を入れる
+        run: brew install xcodegen
+
+      - name: project.yml から .xcodeproj を生成
+        run: xcodegen generate
+
+      - name: 署名なしでビルド
+        run: |
+          xcodebuild \
+            -project GaitCam.xcodeproj \
+            -scheme GaitCam \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: .ipa の形に詰める
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/GaitCam.app Payload/
+          zip -qry GaitCam.ipa Payload
+
+      - name: 成果物として置く
+        uses: actions/upload-artifact@v4
+        with:
+          name: GaitCam-unsigned-ipa
+          path: GaitCam.ipa
