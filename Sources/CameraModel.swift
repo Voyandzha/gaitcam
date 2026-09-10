@@ -66,6 +66,8 @@ final class CameraModel: NSObject, ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var lastSavedName: String?
     @Published private(set) var lastRecordText: String?
+    /// 起動時に書き出すフォーマット一覧。PCへ共有して中身を確認するためのもの。
+    @Published private(set) var formatsFileURL: URL?
 
     /// 選んでいるフォーマットの index（formats の id と同じ）
     @Published private(set) var activeFormatIndex: Int = -1
@@ -131,6 +133,7 @@ final class CameraModel: NSObject, ObservableObject {
                               isBinned: f.isVideoBinned, fourCC: fourCCString(cc))
         }
         publish { self.formats = list }
+        writeFormatsFile(list, device: dev)
 
         // 既定は「1080pで最大fpsが最も高いもの」。無ければ全体の最大fps。
         let best = list.filter { $0.height == 1080 }.max(by: { $0.maxFPS < $1.maxFPS })
@@ -231,6 +234,37 @@ final class CameraModel: NSObject, ObservableObject {
             self.movieOutput.startRecording(to: url, recordingDelegate: self)
             self.publish { self.isRecording = true; self.lastRecordText = nil }
         }
+    }
+
+    // MARK: - フォーマット一覧の書き出し
+
+    /// このiPhoneがアプリに開示している撮影モードを全部テキストにする。
+    /// 画面を写真に撮って送る手間を無くすため。PCへ共有して読む。
+    private func writeFormatsFile(_ list: [FormatInfo], device dev: AVCaptureDevice) {
+        let fast = list.filter { $0.maxFPS >= 100 }
+        let slow = list.filter { $0.maxFPS < 100 }
+
+        var lines = [
+            "# GaitCam フォーマット一覧",
+            "端末          : \(deviceModelIdentifier())",
+            "OS            : \(ProcessInfo.processInfo.operatingSystemVersionString)",
+            "カメラ        : \(dev.localizedName)",
+            "取得日時      : \(ISO8601DateFormatter().string(from: Date()))",
+            "",
+            "この一覧が、このiPhoneがサードパーティのアプリに開示している撮影モードのすべて。",
+            "ここに 120 fps の行があれば 120fps で撮れる。無ければ撮れない。",
+            "",
+            "================ 100 fps 以上（\(fast.count)件）================",
+        ]
+        lines += fast.isEmpty ? ["  （1件も無い）"] : fast.map { "  " + $0.label }
+        lines += ["", "================ それ以外（\(slow.count)件）================"]
+        lines += slow.map { "  " + $0.label }
+        lines += ["", "合計 \(list.count) 件"]
+
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("formats.txt")
+        try? lines.joined(separator: "\n").data(using: .utf8)?.write(to: url)
+        publish { self.formatsFileURL = url }
     }
 
     // MARK: - 小道具

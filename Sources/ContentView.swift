@@ -24,6 +24,16 @@ struct PreviewView: UIViewRepresentable {
     }
 }
 
+/// 共有シート。AirDrop・LocalSend・メールなど、iPhoneが持っている送り先に渡す。
+/// PCから iPhone の画面を操作することはできないので、ファイルを送る側で解決する。
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
 struct ContentView: View {
     @StateObject private var cam = CameraModel()
 
@@ -33,6 +43,7 @@ struct ContentView: View {
     @State private var fps: Double = 120
     @State private var showFormats = false
     @State private var showRecord = false
+    @State private var showShare = false
 
     var body: some View {
         ZStack {
@@ -140,12 +151,21 @@ struct ContentView: View {
                     Text("この一覧が、このiPhoneがアプリに開示しているすべての撮影モードです。"
                          + "ここに 120 fps の行があれば、120fpsで撮れます。")
                         .font(.footnote).foregroundStyle(.secondary)
+                    Button {
+                        showShare = true
+                    } label: {
+                        Label("この一覧をPCへ送る（formats.txt）", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(cam.formatsFileURL == nil)
                 }
                 Section("100 fps 以上") { rows(cam.formats.filter { $0.maxFPS >= 100 }) }
                 Section("それ以外") { rows(cam.formats.filter { $0.maxFPS < 100 }) }
             }
             .navigationTitle("フォーマット")
             .toolbar { Button("閉じる") { showFormats = false } }
+            .sheet(isPresented: $showShare) {
+                if let u = cam.formatsFileURL { ShareSheet(items: [u]) }
+            }
         }
     }
 
